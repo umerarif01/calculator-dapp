@@ -1,82 +1,104 @@
 import Head from 'next/head'
+import { useState } from 'react';
+import { ethers } from 'ethers'
+import Calculator from './artifacts/contracts/Calculator.sol/Calculator.json'
 
 export default function Home() {
+  const ContractAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+  const [result,setResult] = useState();
+  const [number1, setNumber1] = useState();
+  const [number2, setNumber2] = useState();
+
+  async function requestAccount() {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+  }
+
+  async function fetchData() {
+    if (typeof window.ethereum !== 'undefined') {
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const contract = new ethers.Contract(ContractAddress, Calculator.abi, provider)
+      try {
+        const num1 = await contract.getNum1()
+        const num2 = await contract.getNum2()
+        console.log('num1: ',parseInt(num1._hex, 16))
+        console.log('num2: ',parseInt(num2._hex, 16))
+      } catch (err) {
+        console.log("Error: ", err)
+      }
+    }    
+  }
+
+  async function fetchResult() {
+    if (typeof window.ethereum !== 'undefined') {
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const contract = new ethers.Contract(ContractAddress, Calculator.abi, provider)
+      try {
+        const data = await contract.getResult()
+        setResult(parseInt(data._hex, 16));
+        console.log("Result : ",parseInt(data._hex, 16))
+      } catch (err) {
+        console.log("Error: ", err)
+      }
+    }    
+  }
+  
+  async function setNumbers() {
+    if (!number1 && number2) return
+    if (typeof window.ethereum !== 'undefined') {
+      await requestAccount()
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner()
+      const contract = new ethers.Contract(ContractAddress, Calculator.abi, signer)
+      const transaction = await contract.setValue(number1,number2)
+      await transaction.wait()
+      fetchData() 
+    }
+  }
+
+  async function AddNumbers() {
+    if (!number1 && number2) return
+    if (typeof window.ethereum !== 'undefined') {
+      await requestAccount()
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner()
+      const contract = new ethers.Contract(ContractAddress, Calculator.abi, signer)
+      const transaction = await contract.Add()
+      await transaction.wait()
+      fetchResult() 
+    }
+  }
+  
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+    <div className="flex flex-col items-center space-y-3 justify-center min-h-screen py-2">
       <Head>
-        <title>Create Next App</title>
+        <title>DAPP</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
-
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="p-3 font-mono text-lg bg-gray-100 rounded-md">
-            pages/index.js
-          </code>
-        </p>
-
-        <div className="flex flex-wrap items-center justify-around max-w-4xl mt-6 sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className="flex items-center justify-center w-full h-24 border-t">
-        <a
-          className="flex items-center justify-center"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className="h-4 ml-2" />
-        </a>
-      </footer>
+      
+      <h1 className='text-3xl font-sans font-bold'>Calculator Dapp</h1>
+      <button 
+      className='border-2 px-2 py-2'
+      onClick={fetchData}>Fetch Numbers</button>
+      <input 
+      onChange={e => setNumber1(e.target.value)} 
+      placeholder="Set Number1"
+      className='border-2 px-2 py-2' />
+      <input onChange={e => setNumber2(e.target.value)}
+       placeholder="Set Number2" 
+       className='border-2 px-2 py-2'
+       />
+       <button 
+      className='border-2 px-2 py-2'
+      onClick={setNumbers}>Set Numbers</button>
+      <button 
+      className='border-2 px-2 py-2'
+      onClick={fetchResult}>Fetch Result</button>
+      <button 
+      className='border-2 px-2 py-2'
+      onClick={AddNumbers}>Add Numbers</button>
+       <p>Result:{result}</p>
+      
+      
     </div>
   )
 }
